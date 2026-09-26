@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { CATEGORIES, PRIORITIES } from "./analysis-labels";
 
-const MODEL = "claude-haiku-4-5";
+const MODEL = "claude-sonnet-5";
 const TOOL_NAME = "save_ticket_analysis";
 
 const analysisSchema = z.object({
@@ -44,7 +44,12 @@ Always respond by calling the ${TOOL_NAME} tool with:
   - "complaint": dissatisfaction with staff, service or product quality (when it is not mainly about payment or delivery).
   - "other": anything else.
 - summary: exactly one short sentence in Ukrainian describing what the customer needs.
-- draft_reply: a polite, empathetic reply in Ukrainian addressed to the customer by name, ready for a support agent to review and send. Do not invent facts such as order numbers, dates, amounts, or completed refunds, and do not promise specific outcomes; if details are needed, ask the customer for them. Sign it as "Служба підтримки".`;
+- draft_reply: a polite, empathetic reply in Ukrainian addressed to the customer by name, ready for a support agent to review and send. Do not invent facts such as order numbers, dates, amounts, or completed refunds, and do not promise specific outcomes; if details are needed, ask the customer for them. Sign it as "Служба підтримки".
+
+Language rules for summary and draft_reply:
+- Write natural, grammatically correct Ukrainian, the way a native-speaking support agent would write. Check spelling and word forms.
+- Address the customer using the vocative case of their name, e.g. "Олена" → "Олено", "Іван" → "Іване", "Петро" → "Петре", "Андрій" → "Андрію" (for example "Вітаємо, Олено!" or "Шановна Олено,"). If the name can't be declined naturally, use it unchanged.
+- Never use Russian words, Russian spelling or Russian letters (ы, э, ъ, ё), even if the customer wrote in Russian.`;
 
 const TOOL: Anthropic.Tool = {
   name: TOOL_NAME,
@@ -109,7 +114,7 @@ ${escapeForPrompt(ticket.message)}
   try {
     response = await getClient().messages.create({
       model: MODEL,
-      max_tokens: 2048,
+      max_tokens: 4096,
       system: SYSTEM_PROMPT,
       tools: [TOOL],
       tool_choice: { type: "tool", name: TOOL_NAME },

@@ -19,7 +19,7 @@ analyzed_at timestamptz null. A ticket is "not analyzed" when analyzed_at is nul
 ### Stack
 - Next.js App Router, TypeScript, Tailwind
 - Neon Postgres + Drizzle ORM, env var DATABASE_URL
-- Anthropic SDK, model claude-haiku-4-5, env var ANTHROPIC_API_KEY
+- Anthropic SDK, model claude-sonnet-5, env var ANTHROPIC_API_KEY
 - Structured output via tool use, validated with zod
 
 ### Rules
