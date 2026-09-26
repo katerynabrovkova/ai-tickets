@@ -1,6 +1,8 @@
 import { desc } from "drizzle-orm";
 import { db } from "@/db";
 import { tickets } from "@/db/schema";
+import { categoryBadge, priorityBadge } from "@/lib/analysis-labels";
+import { AnalyzeButton } from "./analyze-button";
 import { TicketForm } from "./ticket-form";
 
 // Always read fresh tickets from the database
@@ -57,11 +59,52 @@ export default async function Home() {
                 <p className="whitespace-pre-wrap text-sm text-zinc-700">
                   {ticket.message}
                 </p>
+
+                {ticket.analyzedAt && (
+                  <div className="mt-4 space-y-3 border-t border-zinc-100 pt-3 text-sm">
+                    <div className="flex flex-wrap gap-2">
+                      {ticket.priority && (
+                        <Badge {...priorityBadge(ticket.priority)} />
+                      )}
+                      {ticket.category && (
+                        <Badge {...categoryBadge(ticket.category)} />
+                      )}
+                    </div>
+                    {ticket.summary && (
+                      <p className="text-zinc-800">{ticket.summary}</p>
+                    )}
+                    {ticket.draftReply && (
+                      <div>
+                        <p className="mb-1 text-xs font-medium text-zinc-500">
+                          Чернетка відповіді
+                        </p>
+                        <p className="whitespace-pre-wrap rounded-md bg-zinc-50 p-3 text-zinc-700">
+                          {ticket.draftReply}
+                        </p>
+                      </div>
+                    )}
+                    <p className="text-xs text-zinc-500">
+                      Проаналізовано: {dateFormatter.format(ticket.analyzedAt)}
+                    </p>
+                  </div>
+                )}
+
+                <div className="mt-4">
+                  <AnalyzeButton ticketId={ticket.id} />
+                </div>
               </li>
             ))}
           </ul>
         )}
       </section>
     </main>
+  );
+}
+
+function Badge({ label, className }: { label: string; className: string }) {
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${className}`}>
+      {label}
+    </span>
   );
 }
