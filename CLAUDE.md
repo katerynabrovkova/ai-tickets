@@ -12,9 +12,9 @@ Internal tool for a support team. UI language: Ukrainian.
 - Analysis result is shown on the ticket card.
 
 ### Data model (table: tickets)
-id serial PK, customer_name text, message text, created_at timestamp default now(),
+id serial PK, customer_name text, message text, created_at timestamptz default now(),
 priority text null, category text null, summary text null, draft_reply text null,
-analyzed_at timestamp null. A ticket is "not analyzed" when analyzed_at is null.
+analyzed_at timestamptz null. A ticket is "not analyzed" when analyzed_at is null.
 
 ### Stack
 - Next.js App Router, TypeScript, Tailwind
