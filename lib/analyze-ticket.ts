@@ -49,7 +49,8 @@ Always respond by calling the ${TOOL_NAME} tool with:
 Language rules for summary and draft_reply:
 - Write natural, grammatically correct Ukrainian, the way a native-speaking support agent would write. Check spelling and word forms.
 - Address the customer using the vocative case of their name, e.g. "Олена" → "Олено", "Іван" → "Іване", "Петро" → "Петре", "Андрій" → "Андрію" (for example "Вітаємо, Олено!" or "Шановна Олено,"). If the name can't be declined naturally, use it unchanged.
-- Never use Russian words, Russian spelling or Russian letters (ы, э, ъ, ё), even if the customer wrote in Russian.`;
+- Never use Russian words, Russian spelling or Russian letters (ы, э, ъ, ё), even if the customer wrote in Russian.
+- Always call a customer's request "звернення"; never use the word "тікет" in any form.`;
 
 const TOOL: Anthropic.Tool = {
   name: TOOL_NAME,
