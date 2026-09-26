@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI-обробка звернень
 
-## Getting Started
+Внутрішній інструмент для служби підтримки: оператор додає звернення клієнта, а Claude визначає пріоритет і категорію, пише короткий підсумок і чернетку відповіді українською.
 
-First, run the development server:
+Демо: https://ai-tickets-tawny.vercel.app
+
+## Можливості
+
+- Форма для нового звернення (ім'я клієнта і текст) з валідацією на сервері.
+- Список усіх звернень, найновіші зверху. Дані зберігаються в базі й не зникають після перезавантаження.
+- Кнопка «Аналізувати (AI)» на кожній картці: пріоритет (низький / середній / високий), категорія (оплата / доставка / скарга / інше), підсумок в одне речення і чернетка відповіді клієнту.
+- Результат аналізу показано на картці кольоровими бейджами. Аналіз можна запустити повторно.
+- Зрозумілі повідомлення про помилки українською (немає ключа API, збій мережі, некоректна відповідь AI), сторінка при цьому працює далі.
+
+## Стек
+
+- Next.js (App Router, Server Actions), TypeScript, Tailwind CSS
+- Neon Postgres + Drizzle ORM (міграції через drizzle-kit)
+- Anthropic SDK, модель `claude-sonnet-5`
+- zod для валідації форм і відповіді моделі
+- Хостинг: Vercel
+
+## Як працює AI-аналіз
+
+1. Кнопка викликає Server Action `analyzeTicket(id)`, яка завантажує звернення з бази.
+2. Сервер надсилає звернення до Claude з одним інструментом `save_ticket_analysis`. `tool_choice` примусово вимагає викликати саме його, тому модель завжди повертає структуровані дані, а не довільний текст.
+3. Схема інструмента строга (`strict: true`): `priority` і `category` задані як enum, `summary` і `draft_reply` як рядки, додаткові поля заборонені.
+4. Відповідь ще раз перевіряється через zod. Якщо щось не так, в базу нічого не пишеться, а користувач бачить повідомлення про помилку.
+5. У базі зберігаються англійські значення (`high`, `payment`), а в інтерфейсі показуються українські підписи.
+
+Ключ API використовується лише на сервері: модуль з клієнтом Anthropic позначено `server-only`, змінна не має префікса `NEXT_PUBLIC_`, а в браузер повертається тільки `{ ok, error }`.
+
+## Ключові рішення
+
+- **Neon замість SQLite.** На Vercel функції serverless, і їхня файлова система тимчасова, тому файл SQLite губився б між запитами. Neon дає звичайний Postgres, доступний з будь-якого інстансу.
+- **`timestamptz` для дат.** Час зберігається як абсолютний момент, а показується за київським часом незалежно від часового поясу сервера.
+- **Sonnet 5 замість Haiku 4.5.** Спочатку використовувалась Haiku, але в її українських відповідях траплялися помилки, російські слова та неправильні звертання («Дорога Олена» замість «Олено»). Sonnet 5 пише значно природніше, хоча коштує приблизно вдвічі дорожче.
+- **Захист від prompt injection.** Текст клієнта передається всередині тегів `<ticket>`, символи `<`, `>` і `&` екрануються, щоб текст не міг «закрити» теги. Системний промпт наказує вважати вміст звернення даними, а не інструкціями. Перевірено на спробах змусити модель написати «HACKED», розкрити промпт або підмінити пріоритет.
+- **Межі цього захисту.** Промптом неможливо заблокувати injection на 100%. Справжні обмеження структурні: модель може повернути лише значення з enum і рядки, результат ніде не виконується автоматично, а чернетку відповіді оператор перевіряє перед відправкою.
+
+## Локальний запуск
+
+Потрібен Node.js 20+ і база даних Neon.
+
+1. Створіть файл `.env.local` у корені проєкту з такими змінними:
+   - `DATABASE_URL` (рядок підключення до Neon)
+   - `ANTHROPIC_API_KEY` (ключ Anthropic API)
+2. Встановіть залежності і застосуйте міграції, потім запустіть сервер:
 
 ```bash
+npm install
+npm run db:migrate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Застосунок буде доступний на http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Обмеження і що можна покращити
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Автентифікація.** Зараз будь-хто з посиланням може створювати звернення і запускати аналіз. Для реального використання потрібен вхід для співробітників.
+- **Rate limiting.** Немає обмеження кількості запитів, тому кнопку аналізу можна використати, щоб витратити бюджет API.
+- **Окремі гілки БД для dev і prod.** Зараз локальна розробка і продакшн можуть працювати з однією базою. Neon підтримує гілки, і варто мати окрему для розробки.
+- **Автоматичні тести.** Перевірки поки ручні. Варто додати тести для валідації, обробки помилок і набір eval-прикладів для якості аналізу та стійкості до injection.
 
-## Learn More
+## Про розробку
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Проєкт створено за допомогою [Claude Code](https://claude.com/claude-code).
